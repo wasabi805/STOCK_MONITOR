@@ -1,4 +1,4 @@
-import os
+import os, sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -66,7 +66,50 @@ REST_FRAMEWORK = {
 }
 
 
-
+# CORS
 INSTALLED_APPS += ["corsheaders"]
 MIDDLEWARE.insert(0, "corsheaders.middleware.CorsMiddleware")
 CORS_ALLOW_ALL_ORIGINS = True  # dev only; lock down later
+
+#SET UP SO FINHUB DOESN'T BURN THROUGH API CALLS ALLOWED
+# --- CACHES ---
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "stock-monitor-cache",
+        "TIMEOUT": None,  # we set TTLs per key
+    }
+}
+
+# Recommended TTLs (seconds)
+QUOTE_TTL = 5          # live quotes: cache 5s
+CANDLES_TTL = 60       # 1m–5m candles: 60s; bump for higher resolutions
+
+#IN THE FUTURE, IF REDIS IS SET UP FOR CACHING
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+#         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+#     }
+# }
+
+#LOGGING
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "console": {"format": "[{levelname}] {asctime} {name}: {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "stream": sys.stdout, "formatter": "console"},
+    },
+    "loggers": {
+        "tracker": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
+        "requests": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+    },
+}
+
+
