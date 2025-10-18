@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: stock-monitor-backend
+    env: python
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn stock_monitor.wsgi:application"
+    envVars:
+      - key: DEBUG
+        value: false
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: FINNHUB_API_KEY
+        sync: false # You’ll add this manually in Render dashboard
+
+  - type: static
+    name: stock-monitor-frontend
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    publishDir: "dist"
+    envVars:
+      - key: VITE_API_URL
+        value: https://stock-monitor-backend.onrender.com
