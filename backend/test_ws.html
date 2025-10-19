@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>WS Quote Test</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: ui-monospace, Menlo, monospace; margin: 20px; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+    input, button, select { font: inherit; padding: 6px 10px; }
+    #log { white-space: pre-wrap; max-height: 60vh; overflow: auto; border:1px solid #ddd; padding:10px; border-radius:8px; }
+    .status { padding:2px 6px; border-radius:6px; }
+    .ok { background:#d1fae5; }
+    .warn { background:#ffe8a1; }
+    .err { background:#fecaca; }
+  </style>
+</head>
+<body>
+  <h2>Live Quote Stream (Normalized)</h2>
+
+  <div class="row">
+    <label for="symbol">Symbol:</label>
+    <input id="symbol" value="AAPL" size="8" />
+    <button id="connect">Connect</button>
+    <button id="disconnect">Disconnect</button>
+    <button id="clear">Clear Log</button>
+    <span id="status" class="status">idle</span>
+  </div>
+
+  <p>Backend WS URL: <code id="ws-url">ws://127.0.0.1:8000/ws/quotes/AAPL/</code></p>
+
+  <div id="log"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $("status");
+    const logEl = $("log");
+    const symbolEl = $("symbol");
+    const urlEl = $("ws-url");
+    let socket = null;
+
+    const log = (msg, cls="") => {
+      const time = new Date().toLocaleTimeString();
+      const line = document.createElement("div");
+      if (cls) line.className = cls;
+      line.textContent = `[${time}] ${msg}`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    const setStatus = (txt, cls="") => {
+      statusEl.textContent = txt;
+      statusEl.className = `status ${cls}`;
+    };
+
+    function buildUrl(sym) {
+      const s = (sym || "AAPL").trim().toUpperCase();
+      return `ws://127.0.0.1:8000/ws/quotes/${encodeURIComponent(s)}/`;
+    }
+
+    function connect() {
+      const sym = symbolEl.value || "AAPL";
+      const url = buildUrl(sym);
+      urlEl.textContent = url;
+
+      if (socket) {
+        socket.close();
+        socket = null;
+      }
+
+      setStatus("connecting…", "warn");
+      socket = new WebSocket(url);
+
+      socket.onopen = () => {
+        setStatus(`connected (${sym})`, "ok");
+        log(`WS open → ${url}`);
+      };
+
+      socket.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          // Expected normalized payload:
+          // {type:"tick", symbol:"AAPL", price: 253.72, ts: 1697654462000, iso: "...Z"}
+          log(`tick  ${data.symbol}  ${data.price}  ${data.iso}`);
+        } catch {
+          log(`raw ${e.data}`);
+        }
+      };
+
+      socket.onclose = () => {
+        setStatus("closed", "err");
+        log("WS closed");
+      };
+
+      socket.onerror = (err) => {
+        setStatus("error", "err");
+        log("WS error (see console)");
+        console.error(err);
+      };
+    }
+
+    function disconnect() {
+      if (socket) {
+        socket.close();
+        socket = null;
+        setStatus("closed", "err");
+        log("WS closed by user");
+      }
+    }
+
+    $("connect").onclick = connect;
+    $("disconnect").onclick = disconnect;
+    $("clear").onclick = () => { logEl.textContent = ""; };
+
+    // Auto-connect on load
+    connect();
+  </script>
+</body>
+</html>

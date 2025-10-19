@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>BTCUSDT Live Stream</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: ui-monospace, Menlo, monospace; margin: 20px; background:#fafafa; color:#222; }
+    h2 { margin-bottom: 8px; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+    input, button { font: inherit; padding:6px 10px; }
+    #log { white-space: pre-wrap; max-height: 60vh; overflow:auto; border:1px solid #ddd;
+           padding:10px; border-radius:8px; background:#fff; }
+    .status { padding:2px 6px; border-radius:6px; }
+    .ok { background:#d1fae5; }
+    .warn { background:#ffe8a1; }
+    .err { background:#fecaca; }
+  </style>
+</head>
+<body>
+  <h2>Live BTC Stream (BINANCE:BTCUSDT)</h2>
+  <div class="row">
+    <button id="connect">Connect</button>
+    <button id="disconnect">Disconnect</button>
+    <button id="clear">Clear</button>
+    <span id="status" class="status">idle</span>
+  </div>
+  <p>Connecting to: <code id="ws-url">ws://127.0.0.1:8000/ws/quotes/BINANCE:BTCUSDT/</code></p>
+  <div id="log"></div>
+
+  <script>
+    const logEl = document.getElementById("log");
+    const statusEl = document.getElementById("status");
+    const url = "ws://127.0.0.1:8000/ws/quotes/BINANCE:BTCUSDT/";
+    let socket = null;
+
+    const log = (msg, cls="") => {
+      const t = new Date().toLocaleTimeString();
+      const line = document.createElement("div");
+      line.textContent = `[${t}] ${msg}`;
+      if (cls) line.className = cls;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    const setStatus = (txt, cls="") => {
+      statusEl.textContent = txt;
+      statusEl.className = `status ${cls}`;
+    };
+
+    function connect() {
+      if (socket) socket.close();
+      socket = new WebSocket(url);
+      setStatus("connecting…", "warn");
+      log(`Connecting → ${url}`);
+
+      socket.onopen = () => {
+        setStatus("connected", "ok");
+        log("✅ WebSocket open, waiting for ticks…");
+      };
+
+      socket.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.type === "tick") {
+            log(`💹 ${data.symbol}  ${data.price.toFixed(2)}  ${data.iso}`);
+          } else {
+            log(JSON.stringify(data));
+          }
+        } catch {
+          log(e.data);
+        }
+      };
+
+      socket.onerror = (err) => {
+        console.error(err);
+        setStatus("error", "err");
+        log("⚠️ WebSocket error");
+      };
+
+      socket.onclose = () => {
+        setStatus("closed", "err");
+        log("❌ Connection closed");
+      };
+    }
+
+    function disconnect() {
+      if (socket) {
+        socket.close();
+        socket = null;
+        setStatus("closed", "err");
+        log("Closed by user");
+      }
+    }
+
+    document.getElementById("connect").onclick = connect;
+    document.getElementById("disconnect").onclick = disconnect;
+    document.getElementById("clear").onclick = () => (logEl.textContent = "");
+
+    // auto-connect on load
+    connect();
+  </script>
+</body>
+</html>

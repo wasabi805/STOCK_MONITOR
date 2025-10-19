@@ -1,69 +1,117 @@
-import os, json, asyncio, logging
+# backend/tracker/consumers.py
+
+import json
+import logging
+from datetime import datetime, timezone
 from channels.generic.websocket import AsyncWebsocketConsumer
-import websockets
+
+# These come from the manager we created in symbol_stream.py
+from .symbol_stream import ensure_stream, release_stream, group_name_for
 
 log = logging.getLogger("tracker")
-FINNHUB_WS = "wss://ws.finnhub.io"
-FINNHUB_TOKEN = os.getenv("FINNHUB_API_KEY")
+
 
 class QuoteConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.symbol = (self.scope["url_route"]["kwargs"]["symbol"] or "").upper()
-        if not self.symbol or not FINNHUB_TOKEN:
+        # Symbol from the URL: /ws/quotes/<symbol>/
+        self.symbol = (self.scope["url_route"]["kwargs"].get("symbol") or "").upper()
+        if not self.symbol:
             await self.close(code=4001)
             return
+
+        self.group_name = group_name_for(self.symbol)
+
+        # Join group first so we don't miss early messages
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-        # open upstream connection
-        self._stop = asyncio.Event()
-        self._task = asyncio.create_task(self._stream())
+        # Ensure a shared upstream Finnhub WS is running for this symbol
+        await ensure_stream(self.symbol, self.channel_layer)
+        log.info("WS client joined %s (%s)", self.symbol, self.channel_name)
 
     async def disconnect(self, close_code):
-        if hasattr(self, "_stop"):
-            self._stop.set()
-        if hasattr(self, "_task"):
-            with contextlib.suppress(Exception):
-                await asyncio.wait_for(self._task, timeout=1.0)
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        await release_stream(self.symbol)
+        log.info("WS client left %s (%s)", self.symbol, self.channel_name)
+
+    async def quote_message(self, event):
+        """
+        event = {
+            "type": "quote.message",
+            "text": "<raw JSON from finnhub>",
+            "symbol": "AAPL"
+        }
+        """
+
+        try:
+            raw = json.loads(event.get("text", "{}"))
+            if raw.get("type") == "trade" and raw.get("data"):
+                ticks = []
+                for trade in raw["data"]:
+                    ts = trade.get("t")
+                    iso = None
+                    if ts:
+                        try:
+                            iso = datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat()
+                        except Exception:
+                            iso = None
+                    ticks.append({
+                        "type": "tick",
+                        "symbol": trade.get("s"),
+                        "price": trade.get("p"),
+                        "ts": ts,
+                        "iso": iso
+                    })
+                if ticks:
+                    await self.send(text_data=json.dumps(ticks[-1]))  # only send latest
+                    return
+        except Exception as e:
+            log.debug("Failed to normalize tick: %s", e)
+
+        # fallback — send raw if not parsed
+        await self.send(text_data=event.get("text", "{}"))
 
     async def receive(self, text_data=None, bytes_data=None):
-        # optional: accept commands from client (noop here)
+        # Reserved for future browser messages (like changing symbols)
         pass
+    async def connect(self):
+        # Symbol from the URL: /ws/quotes/<symbol>/
+        self.symbol = (self.scope["url_route"]["kwargs"].get("symbol") or "").upper()
+        if not self.symbol:
+            await self.close(code=4001)
+            return
 
-    async def _stream(self):
-        import contextlib
-        url = f"{FINNHUB_WS}?token={FINNHUB_TOKEN}"
-        try:
-            async with websockets.connect(url, ping_interval=20, ping_timeout=20) as ws:
-                # subscribe
-                sub_msg = json.dumps({"type": "subscribe", "symbol": self.symbol})
-                await ws.send(sub_msg)
+        # Group all clients for this symbol together
+        self.group_name = group_name_for(self.symbol)
 
-                while not self._stop.is_set():
-                    try:
-                        raw = await asyncio.wait_for(ws.recv(), timeout=30)
-                    except asyncio.TimeoutError:
-                        # keepalive ping by re-sending subscribe
-                        await ws.send(sub_msg)
-                        continue
+        # Join group first (so we don't miss early messages), then accept
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
 
-                    try:
-                        data = json.loads(raw)
-                    except Exception:
-                        continue
+        # Ensure a single upstream Finnhub WS is running for this symbol
+        await ensure_stream(self.symbol, self.channel_layer)
+        log.info("WS client joined %s (%s)", self.symbol, self.channel_name)
 
-                    # Finnhub trade payloads: {"type":"trade","data":[{ "s":"AAPL","p":..., "t":... }]}
-                    await self.send(text_data=json.dumps(data))
+    async def disconnect(self, close_code):
+        # Leave the symbol group
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        # Decrement subscriber count; stop upstream when last client leaves
+        await release_stream(self.symbol)
+        log.info("WS client left %s (%s)", self.symbol, self.channel_name)
 
-                # unsubscribe on exit
-                with contextlib.suppress(Exception):
-                    await ws.send(json.dumps({"type": "unsubscribe", "symbol": self.symbol}))
-        except websockets.exceptions.ConnectionClosed as e:
-            log.warning("Finnhub WS closed: %s", e)
-        except Exception as e:
-            log.error("Finnhub WS error: %s", e)
-            # notify client once
-            try:
-                await self.send(text_data=json.dumps({"type":"error","message":"upstream unavailable"}))
-            except Exception:
-                pass
-            await asyncio.sleep(0.5)
+    # Receive messages from the group (sent by symbol_stream._run_stream)
+    async def quote_message(self, event):
+        """
+        event = {
+            "type": "quote.message",
+            "text": "<raw json string from finnhub>",
+            "symbol": "AAPL"
+        }
+        """
+        # Pass-through (you can normalize here if you prefer)
+        await self.send(text_data=event.get("text", "{}"))
+
+    # Optional: handle messages sent from the browser (not used here)
+    async def receive(self, text_data=None, bytes_data=None):
+        # You could add client commands here (e.g., switch symbol)
+        pass
