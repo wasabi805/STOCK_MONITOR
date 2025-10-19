@@ -113,3 +113,16 @@ LOGGING = {
 }
 
 
+#// websocket connections to finhub
+INSTALLED_APPS += [
+    "channels",     # already in your reqs, make sure it's listed
+]
+
+ASGI_APPLICATION = "stock_monitor.asgi.application"
+
+# Dev: in-memory layer (switch to Redis in prod)
+CHANNEL_LAYERS = {
+    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+}
+
+
