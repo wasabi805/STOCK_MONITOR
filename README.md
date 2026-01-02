@@ -34,3 +34,23 @@ pip freeze > requirements.txt
 !! ---> python -m daphne -p 8000 stock_monitor.asgi:application
 
 to check, visit : http://127.0.0.1:8000/api/stock/AAPL/
+
+# view normailized data in browser
+
+ex.) ws://127.0.0.1:8000/ws/quotes/AAPL/
+
+# To Test
+
+open another terminal and run
+
+# Note testing for stocks in real time will only work when the market is open, not on the weekends
+
+cd backend
+python3 -m http.server 8080
+then visit http://127.0.0.1:8080/test_ws.html
+
+# To test Bitcoin (24/7)
+
+cd backend
+python3 -m http.server 8080
+then visit http://127.0.0.1:8080/test_ws_btc.html
