@@ -1,33 +1,52 @@
-# ---- Python ----
+# ==============================
+# Python
+# ==============================
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.pyc
 *$py.class
 
-# ---- Virtual Environment ----
+# ==============================
+# Virtual Environments
+# ==============================
+venv/
 backend/venv/
-env/
-.venv/
+.env/
+.env
+*.env
 ENV/
+env/
 env.bak/
 venv.bak/
 
-# ---- Node / React ----
+# ==============================
+# Django / Python runtime
+# ==============================
+db.sqlite3
+staticfiles/
+
+# ==============================
+# Node / Frontend (future-safe)
+# ==============================
+node_modules/
 frontend/node_modules/
 frontend/.vite/
 frontend/dist/
 frontend/.env.local
 
-# ---- Logs / Temp ----
+# ==============================
+# Logs / Temp files
+# ==============================
 *.log
 *.tmp
 *.temp
 *.bak
 *.old
 
-# ---- Data / Cache ----
+# ==============================
+# Data / Cache
+# ==============================
 *.db
 *.sqlite3
 *.csv
@@ -35,36 +54,16 @@ frontend/.env.local
 *.cache/
 data/
 
-# ---- OS / IDE ----
-.vscode/
-.idea/
+# ==============================
+# OS / IDE
+# ==============================
 .DS_Store
 Thumbs.db
-ehthumbs.db
-Desktop.ini
+.vscode/
+.idea/
 
-# ---- Python build artifacts ----
-build/
-dist/
-*.egg-info/
-.eggs/
+# ==============================
+# Local / sensitive config
+# ==============================
+backend.env
 
-# ---- Matplotlib & Jupyter ----
-.mplconfig/
-.matplotlib/
-.ipynb_checkpoints/
-
-# ---- Docker / Compose ----
-*.pid
-*.pid.lock
-*.tar
-
-# ---- Render or Deployment ----
-.env
-.env.*
-!.env.example
-
-# ---- Coverage / Test ----
-.coverage
-htmlcov/
-pytest_cache/

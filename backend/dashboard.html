@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Dashboard</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif; }
+    body { margin: 0; background: #0b0f14; color: #e8eef6; }
+    .wrap { padding: 16px; }
+    .top {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 12px;
+    }
+    .title { font-size: 18px; font-weight: 700; letter-spacing: .3px; }
+    .meta { font-size: 12px; opacity: .8; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .card {
+      background: #111826;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      touch-action: manipulation;
+    }
+    .sym { font-size: 18px; font-weight: 800; }
+    .price { font-size: 28px; font-weight: 800; }
+    .sub { font-size: 12px; opacity: .8; display: flex; gap: 10px; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      padding: 4px 8px; border-radius: 999px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #666; }
+    .dot.ok { background: #30d158; }
+    .dot.bad { background: #ff453a; }
+    .hint { font-size: 11px; opacity: .7; margin-top: 10px; line-height: 1.3; }
+
+    /* Good for Pi official touchscreen (800x480) */
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .price { font-size: 26px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">📈 Stock Dashboard</div>
+      <div class="meta" id="clock">--</div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="hint">
+      Tip: Tap a tile to refresh the snapshot via HTTP (handy when markets are closed).<br/>
+      WebSockets connect to <code>/ws/quotes/&lt;SYMBOL&gt;/</code> and update when data is pushed.
+    </div>
+  </div>
+
+<script>
+  // ✅ Change these to your six tickers
+  const SYMBOLS = ["AAPL", "NVDA", "MSFT", "TSLA", "AMZN", "GOOGL"];
+
+  const PI_HOST = location.hostname;           // when opened from Pi or via IP, this works
+  const WS_BASE = `ws://${PI_HOST}:8000/ws/quotes/`;
+  const API_BASE = `http://${PI_HOST}:8000/api/stock/`;
+
+  const grid = document.getElementById("grid");
+  const clockEl = document.getElementById("clock");
+
+  function fmtMoney(n) {
+    if (n === null || n === undefined || n === "") return "--";
+    const num = Number(n);
+    if (Number.isNaN(num)) return String(n);
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function setClock() {
+    const d = new Date();
+    clockEl.textContent = d.toLocaleString();
+  }
+  setClock();
+  setInterval(setClock, 1000);
+
+  function makeCard(symbol) {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.id = `card-${symbol}`;
+    el.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div class="sym">${symbol}</div>
+        <div class="pill"><span class="dot" id="dot-${symbol}"></span><span style="font-size:12px;">WS</span></div>
+      </div>
+      <div class="price" id="price-${symbol}">--</div>
+      <div class="sub">
+        <span class="pill">Last: <span id="last-${symbol}">--</span></span>
+        <span class="pill">Status: <span id="status-${symbol}">connecting…</span></span>
+      </div>
+    `;
+
+    // Tap to fetch a snapshot via HTTP (nice for testing + market closed)
+    el.addEventListener("click", () => fetchSnapshot(symbol));
+    el.addEventListener("touchend", () => fetchSnapshot(symbol));
+
+    return el;
+  }
+
+  function setStatus(symbol, ok, msg) {
+    const dot = document.getElementById(`dot-${symbol}`);
+    const status = document.getElementById(`status-${symbol}`);
+    dot.classList.remove("ok","bad");
+    dot.classList.add(ok ? "ok" : "bad");
+    status.textContent = msg;
+  }
+
+  function setPrice(symbol, price) {
+    document.getElementById(`price-${symbol}`).textContent = fmtMoney(price);
+    document.getElementById(`last-${symbol}`).textContent = new Date().toLocaleTimeString();
+  }
+
+  async function fetchSnapshot(symbol) {
+    try {
+      const res = await fetch(`${API_BASE}${encodeURIComponent(symbol)}/`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      // Try common fields; adjust if your API returns different keys
+      const price = data.price ?? data.c ?? data.current ?? data.last ?? data.data?.price;
+      setPrice(symbol, price);
+    } catch (e) {
+      setStatus(symbol, false, `http error`);
+      console.warn("snapshot error", symbol, e);
+    }
+  }
+
+  function connectWS(symbol) {
+    const url = `${WS_BASE}${encodeURIComponent(symbol)}/`;
+    const ws = new WebSocket(url);
+
+    setStatus(symbol, true, "connecting…");
+
+    ws.onopen = () => setStatus(symbol, true, "connected");
+    ws.onclose = () => setStatus(symbol, false, "disconnected");
+    ws.onerror = () => setStatus(symbol, false, "ws error");
+
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+
+        // Handle multiple possible message shapes:
+        // 1) { price: 123.45 }
+        // 2) { c: 123.45 }  (Finnhub 'c' current)
+        // 3) { data: { price: 123.45 } }
+        // 4) Finnhub WS style: { data: [{ p: 123.45, s: "AAPL" }, ...] }
+        let price = msg.price ?? msg.c ?? msg.current ?? msg.last ?? msg.data?.price;
+
+        if (price === undefined && Array.isArray(msg.data) && msg.data[0]?.p !== undefined) {
+          price = msg.data[0].p;
+        }
+
+        if (price !== undefined) setPrice(symbol, price);
+        setStatus(symbol, true, "connected");
+      } catch (e) {
+        console.warn("ws parse error", symbol, e, evt.data);
+      }
+    };
+
+    // reconnect loop
+    const retry = () => setTimeout(() => connectWS(symbol), 2000);
+    ws.addEventListener("close", retry, { once: true });
+  }
+
+  // Build UI
+  SYMBOLS.forEach(sym => grid.appendChild(makeCard(sym)));
+
+  // Kick off
+  SYMBOLS.forEach(sym => {
+    connectWS(sym);
+    fetchSnapshot(sym);
+  });
+</script>
+
