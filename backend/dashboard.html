@@ -2,191 +2,683 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stock Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pi Kiosk</title>
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif; }
-    body { margin: 0; background: #0b0f14; color: #e8eef6; }
-    .wrap { padding: 16px; }
-    .top {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; margin-bottom: 12px;
+    :root{
+      --bg:#0b1020;
+      --panel:#111a33;
+      --panel2:#0f1730;
+      --border:rgba(255,255,255,.08);
+      --text:#e8ecff;
+      --muted:rgba(232,236,255,.7);
+      --muted2:rgba(232,236,255,.55);
+      --accent:#4cc9f0;
+      --good:#3ee07b;
+      --warn:#ffcc66;
+      --bad:#ff5d5d;
+      --radius:18px;
     }
-    .title { font-size: 18px; font-weight: 700; letter-spacing: .3px; }
-    .meta { font-size: 12px; opacity: .8; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 700px at 30% 10%, #142252 0%, var(--bg) 60%) fixed;
+      color:var(--text);
+      overflow:hidden;
     }
-    .card {
-      background: #111826;
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 16px;
-      padding: 14px;
-      min-height: 120px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: 0 8px 24px rgba(0,0,0,.35);
-      touch-action: manipulation;
-    }
-    .sym { font-size: 18px; font-weight: 800; }
-    .price { font-size: 28px; font-weight: 800; }
-    .sub { font-size: 12px; opacity: .8; display: flex; gap: 10px; flex-wrap: wrap; }
-    .pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      padding: 4px 8px; border-radius: 999px;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #666; }
-    .dot.ok { background: #30d158; }
-    .dot.bad { background: #ff453a; }
-    .hint { font-size: 11px; opacity: .7; margin-top: 10px; line-height: 1.3; }
+    a{color:inherit}
 
-    /* Good for Pi official touchscreen (800x480) */
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: repeat(2, 1fr); }
-      .price { font-size: 26px; }
+    /* App shell */
+    #app{
+      position:relative;
+      height:100%;
+      width:100%;
+    }
+
+    /* Views are layered; inactive views are transparent but still "alive" (important for YouTube playback) */
+    .view{
+      position:absolute;
+      inset:0;
+      padding:18px 18px 14px;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .18s ease;
+    }
+    .view.active{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    /* Header */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:800; letter-spacing:.2px;
+      font-size:20px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 12px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      border-radius:999px;
+      font-size:12px;
+      color:var(--muted);
+      user-select:none;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--muted2);
+      box-shadow:0 0 0 2px rgba(0,0,0,.25) inset;
+    }
+    .dot.good{background:var(--good)}
+    .dot.warn{background:var(--warn)}
+    .dot.bad{background:var(--bad)}
+
+    .btn{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:700;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{
+      border-color:rgba(76,201,240,.35);
+      background:rgba(76,201,240,.12);
+    }
+
+    /* Home */
+    .homeGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      height: calc(100% - 54px);
+    }
+    .homeCard{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius:var(--radius);
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      min-height:160px;
+    }
+    .homeCard h2{
+      margin:0 0 6px;
+      font-size:22px;
+      letter-spacing:.2px;
+    }
+    .homeCard p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.3;
+    }
+    .homeCard .actions{
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    /* Stocks */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:14px;
+    }
+    .card{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius:var(--radius);
+      padding:16px;
+      min-height:140px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .symRow{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+    }
+    .sym{
+      font-weight:900;
+      letter-spacing:.6px;
+      font-size:18px;
+    }
+    .price{
+      font-size:36px;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .meta{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .chip{
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.15);
+      padding:6px 10px;
+      border-radius:999px;
+    }
+
+    /* YouTube */
+    .ytLayout{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:14px;
+      height: calc(100% - 54px);
+      min-height:0;
+    }
+    .panel{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius:var(--radius);
+      padding:14px;
+      min-height:0;
+      overflow:hidden;
+    }
+    .ytPlayerWrap{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:0;
+    }
+    .ytControls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .ytControls form{
+      display:flex;
+      gap:10px;
+      flex:1;
+      min-width:260px;
+    }
+    input[type="text"]{
+      flex:1;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.18);
+      color:var(--text);
+      border-radius:999px;
+      padding:10px 12px;
+      outline:none;
+    }
+    .ytIframe{
+      flex:1;
+      min-height:0;
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      background:#000;
+    }
+    .ytIframe iframe{
+      width:100%;
+      height:100%;
+      border:0;
+    }
+
+    .ytResults{
+      height:100%;
+      overflow:auto;
+      padding-right:6px;
+    }
+    .ytItem{
+      display:flex;
+      gap:10px;
+      padding:10px;
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:14px;
+      background:rgba(0,0,0,.12);
+      margin-bottom:10px;
+      cursor:pointer;
+    }
+    .ytItem:active{transform:translateY(1px)}
+    .ytThumb{
+      width:110px;
+      height:62px;
+      border-radius:10px;
+      background:#111;
+      object-fit:cover;
+      flex:0 0 auto;
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .ytText{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .ytTitle{
+      font-weight:800;
+      font-size:13px;
+      line-height:1.25;
+      overflow:hidden;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+    }
+    .ytChan{
+      font-size:12px;
+      color:var(--muted);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      max-width:100%;
+    }
+    .smallNote{
+      font-size:12px;
+      color:var(--muted2);
+      margin-top:10px;
+      line-height:1.25;
+    }
+
+    /* Fit small screens */
+    @media (max-width: 900px){
+      .grid{grid-template-columns: 1fr 1fr;}
+      .ytLayout{grid-template-columns: 1fr;}
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div class="title">📈 Stock Dashboard</div>
-      <div class="meta" id="clock">--</div>
+<div id="app">
+
+  <!-- HOME VIEW -->
+  <section id="viewHome" class="view active">
+    <div class="topbar">
+      <div class="brand">📟 Pi Kiosk</div>
+      <div class="pill"><span class="dot good"></span> Running</div>
     </div>
 
-    <div class="grid" id="grid"></div>
+    <div class="homeGrid">
+      <div class="homeCard">
+        <div>
+          <h2>Stocks</h2>
+          <p>Live price tiles via WebSockets, plus quick HTTP refresh on tap.</p>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="goStocks" type="button">Open Stocks</button>
+        </div>
+      </div>
 
-    <div class="hint">
-      Tip: Tap a tile to refresh the snapshot via HTTP (handy when markets are closed).<br/>
-      WebSockets connect to <code>/ws/quotes/&lt;SYMBOL&gt;/</code> and update when data is pushed.
+      <div class="homeCard">
+        <div>
+          <h2>YouTube</h2>
+          <p>Search + play videos. Stays playing while you peek at Stocks.</p>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="goYouTube" type="button">Open YouTube</button>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- STOCKS VIEW -->
+  <section id="viewStocks" class="view">
+    <div class="topbar">
+      <div class="brand">📈 Stock Dashboard</div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn" id="stocksHome" type="button">Home</button>
+        <div class="pill"><span id="stocksDot" class="dot warn"></span><span id="stocksConnText">Connecting…</span></div>
+        <div class="pill" id="clock"></div>
+      </div>
+    </div>
+
+    <div class="grid" id="cards"></div>
+
+    <div class="smallNote">
+      Tip: Tap a tile to refresh snapshot via HTTP (handy when markets are closed). WebSockets connect to
+      <code>/ws/quotes/&lt;SYMBOL&gt;/</code> and update when data is pushed.
+    </div>
+  </section>
+
+  <!-- YOUTUBE VIEW -->
+  <section id="viewYouTube" class="view">
+    <div class="topbar">
+      <div class="brand">▶️ YouTube</div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn" id="ytHome" type="button">Home</button>
+        <div class="pill"><span class="dot good"></span><span id="ytStatus">Ready</span></div>
+      </div>
+    </div>
+
+    <div class="ytLayout">
+      <div class="panel ytPlayerWrap">
+        <div class="ytControls">
+          <form id="ytForm" autocomplete="off">
+            <input id="ytQuery" type="text" placeholder="Search YouTube (e.g., lofi hip hop, NFL highlights, React tutorial)" />
+            <!-- IMPORTANT: this must be type=button or a submit with preventDefault -->
+            <button class="btn primary" id="ytSearchBtn" type="submit">Search</button>
+          </form>
+
+          <button class="btn" id="ytPlayPause" type="button">Play/Pause</button>
+          <button class="btn" id="ytPrev" type="button">Prev</button>
+          <button class="btn" id="ytNext" type="button">Next</button>
+        </div>
+
+        <div class="ytIframe">
+          <!-- Start with something valid so iframe exists and can keep playing even if view is hidden -->
+          <iframe id="ytFrame"
+            src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=0&mute=0&playsinline=1"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        </div>
+
+        <div class="smallNote">
+          Note: This uses your Django endpoint <code>/api/youtube/search/?q=...</code>. If the API key is missing/invalid,
+          search will fail but playback of already-loaded videos still works.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="font-weight:900; margin-bottom:10px;">Results</div>
+        <div class="ytResults" id="ytResults"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
 
 <script>
-  // ✅ Change these to your six tickers
-  const SYMBOLS = ["AAPL", "NVDA", "MSFT", "TSLA", "AMZN", "GOOGL"];
+/* -----------------------------
+   Mode switching
+--------------------------------*/
+const viewHome   = document.getElementById("viewHome");
+const viewStocks = document.getElementById("viewStocks");
+const viewYT     = document.getElementById("viewYouTube");
 
-  const PI_HOST = location.hostname;           // when opened from Pi or via IP, this works
-  const WS_BASE = `ws://${PI_HOST}:8000/ws/quotes/`;
-  const API_BASE = `http://${PI_HOST}:8000/api/stock/`;
+let currentMode = "home"; // home | stocks | youtube
 
-  const grid = document.getElementById("grid");
-  const clockEl = document.getElementById("clock");
+function setMode(mode){
+  currentMode = mode;
 
-  function fmtMoney(n) {
-    if (n === null || n === undefined || n === "") return "--";
-    const num = Number(n);
-    if (Number.isNaN(num)) return String(n);
-    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  viewHome.classList.toggle("active",   mode === "home");
+  viewStocks.classList.toggle("active", mode === "stocks");
+  viewYT.classList.toggle("active",     mode === "youtube");
+
+  // Lazy-init Stocks the first time you open it
+  if (mode === "stocks") initStocksOnce();
+
+  // Optional: focus search box when entering YouTube
+  if (mode === "youtube") {
+    setTimeout(() => document.getElementById("ytQuery")?.focus(), 50);
+  }
+}
+
+document.getElementById("goStocks").addEventListener("click", () => setMode("stocks"));
+document.getElementById("goYouTube").addEventListener("click", () => setMode("youtube"));
+document.getElementById("stocksHome").addEventListener("click", () => setMode("home"));
+document.getElementById("ytHome").addEventListener("click", () => setMode("home"));
+
+/* -----------------------------
+   STOCKS (keep behavior as-is, but init when entering Stocks)
+--------------------------------*/
+const tickers = ["AAPL","NVDA","MSFT","TSLA","AMZN","GOOGL"];
+const cardsEl = document.getElementById("cards");
+const clockEl = document.getElementById("clock");
+
+const stocksDot = document.getElementById("stocksDot");
+const stocksConnText = document.getElementById("stocksConnText");
+
+let stocksInitialized = false;
+let stockSockets = {}; // symbol -> WebSocket
+
+function setStocksStatus(state){
+  // state: good | warn | bad
+  stocksDot.classList.remove("good","warn","bad");
+  stocksDot.classList.add(state);
+  if (state === "good") stocksConnText.textContent = "connected";
+  if (state === "warn") stocksConnText.textContent = "connecting…";
+  if (state === "bad")  stocksConnText.textContent = "disconnected";
+}
+
+function renderStockCard(symbol){
+  const card = document.createElement("div");
+  card.className = "card";
+  card.id = `card-${symbol}`;
+  card.innerHTML = `
+    <div class="symRow">
+      <div class="sym">${symbol}</div>
+      <div class="pill"><span class="dot warn"></span><span class="wsState">ws</span></div>
+    </div>
+    <div class="price" id="price-${symbol}">--</div>
+    <div class="meta">
+      <div class="chip">Last: <span id="last-${symbol}">--</span></div>
+      <div class="chip">Status: <span id="status-${symbol}">connecting</span></div>
+    </div>
+  `;
+
+  // Tap to refresh via HTTP
+  card.addEventListener("click", () => refreshSnapshot(symbol));
+  return card;
+}
+
+function updateClock(){
+  const d = new Date();
+  clockEl.textContent = d.toLocaleString();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+async function refreshSnapshot(symbol){
+  try{
+    const res = await fetch(`/api/stock/${symbol}/`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    // Expecting something like: { symbol, price, timestamp } or similar
+    const price = data.price ?? data.last ?? data.current ?? "--";
+    setStockUI(symbol, price, "http refresh");
+  }catch(e){
+    console.warn("snapshot failed", symbol, e);
+    setStockUI(symbol, "--", "http failed");
+  }
+}
+
+function setStockUI(symbol, price, status){
+  const priceEl = document.getElementById(`price-${symbol}`);
+  const lastEl  = document.getElementById(`last-${symbol}`);
+  const statEl  = document.getElementById(`status-${symbol}`);
+
+  if (priceEl) priceEl.textContent = (typeof price === "number") ? price.toFixed(2) : String(price);
+  if (lastEl)  lastEl.textContent  = new Date().toLocaleTimeString();
+  if (statEl)  statEl.textContent  = status;
+}
+
+function connectWS(symbol){
+  // If already connected, skip
+  if (stockSockets[symbol] && stockSockets[symbol].readyState === WebSocket.OPEN) return;
+
+  const wsProto = (location.protocol === "https:") ? "wss" : "ws";
+  const wsUrl = `${wsProto}://${location.host}/ws/quotes/${symbol}/`;
+
+  const card = document.getElementById(`card-${symbol}`);
+  const wsStateEl = card?.querySelector(".wsState");
+  const dotEl = card?.querySelector(".dot");
+
+  const ws = new WebSocket(wsUrl);
+  stockSockets[symbol] = ws;
+
+  setStocksStatus("warn");
+  if (wsStateEl) wsStateEl.textContent = "connecting";
+  if (dotEl){ dotEl.classList.remove("good","bad"); dotEl.classList.add("warn"); }
+
+  ws.onopen = () => {
+    if (wsStateEl) wsStateEl.textContent = "ws";
+    if (dotEl){ dotEl.classList.remove("warn","bad"); dotEl.classList.add("good"); }
+    setStockUI(symbol, document.getElementById(`price-${symbol}`)?.textContent ?? "--", "connected");
+    setStocksStatus("good");
+  };
+
+  ws.onmessage = (evt) => {
+    try{
+      const msg = JSON.parse(evt.data);
+      // Expecting msg like {symbol:"AAPL", price: 123.45} or {price:...}
+      const price = msg.price ?? msg.last ?? msg.current ?? "--";
+      setStockUI(symbol, price, "connected");
+    }catch(e){
+      console.warn("bad ws message", symbol, e);
+    }
+  };
+
+  ws.onerror = () => {
+    if (wsStateEl) wsStateEl.textContent = "error";
+    if (dotEl){ dotEl.classList.remove("good","warn"); dotEl.classList.add("bad"); }
+    setStockUI(symbol, document.getElementById(`price-${symbol}`)?.textContent ?? "--", "error");
+    setStocksStatus("bad");
+  };
+
+  ws.onclose = () => {
+    if (wsStateEl) wsStateEl.textContent = "closed";
+    if (dotEl){ dotEl.classList.remove("good","warn"); dotEl.classList.add("bad"); }
+    setStockUI(symbol, document.getElementById(`price-${symbol}`)?.textContent ?? "--", "disconnected");
+    setStocksStatus("bad");
+
+    // Auto-reconnect after a moment (but only if you’re still in stocks mode)
+    setTimeout(() => {
+      if (currentMode === "stocks") connectWS(symbol);
+    }, 2000);
+  };
+}
+
+function initStocksOnce(){
+  if (stocksInitialized) return;
+  stocksInitialized = true;
+
+  cardsEl.innerHTML = "";
+  tickers.forEach(sym => cardsEl.appendChild(renderStockCard(sym)));
+
+  // connect sockets
+  tickers.forEach(sym => connectWS(sym));
+
+  // initial HTTP snapshot (optional)
+  tickers.forEach(sym => refreshSnapshot(sym));
+}
+
+/* -----------------------------
+   YOUTUBE
+--------------------------------*/
+const ytForm = document.getElementById("ytForm");
+const ytQuery = document.getElementById("ytQuery");
+const ytResults = document.getElementById("ytResults");
+const ytStatus = document.getElementById("ytStatus");
+const ytFrame = document.getElementById("ytFrame");
+
+let ytQueue = [];
+let ytIndex = 0;
+
+function ytSetStatus(msg){ ytStatus.textContent = msg; }
+
+function ytPlayVideoId(videoId){
+  // Keep embed alive; just swap src
+  const url = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1`;
+  ytFrame.src = url;
+}
+
+function renderYTResults(items){
+  ytResults.innerHTML = "";
+  if (!items.length){
+    ytResults.innerHTML = `<div class="smallNote">No results.</div>`;
+    return;
   }
 
-  function setClock() {
-    const d = new Date();
-    clockEl.textContent = d.toLocaleString();
-  }
-  setClock();
-  setInterval(setClock, 1000);
-
-  function makeCard(symbol) {
-    const el = document.createElement("div");
-    el.className = "card";
-    el.id = `card-${symbol}`;
-    el.innerHTML = `
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-        <div class="sym">${symbol}</div>
-        <div class="pill"><span class="dot" id="dot-${symbol}"></span><span style="font-size:12px;">WS</span></div>
-      </div>
-      <div class="price" id="price-${symbol}">--</div>
-      <div class="sub">
-        <span class="pill">Last: <span id="last-${symbol}">--</span></span>
-        <span class="pill">Status: <span id="status-${symbol}">connecting…</span></span>
+  items.forEach((it, idx) => {
+    const row = document.createElement("div");
+    row.className = "ytItem";
+    row.innerHTML = `
+      <img class="ytThumb" src="${it.thumb}" alt="">
+      <div class="ytText">
+        <div class="ytTitle">${it.title}</div>
+        <div class="ytChan">${it.channelTitle}</div>
       </div>
     `;
-
-    // Tap to fetch a snapshot via HTTP (nice for testing + market closed)
-    el.addEventListener("click", () => fetchSnapshot(symbol));
-    el.addEventListener("touchend", () => fetchSnapshot(symbol));
-
-    return el;
-  }
-
-  function setStatus(symbol, ok, msg) {
-    const dot = document.getElementById(`dot-${symbol}`);
-    const status = document.getElementById(`status-${symbol}`);
-    dot.classList.remove("ok","bad");
-    dot.classList.add(ok ? "ok" : "bad");
-    status.textContent = msg;
-  }
-
-  function setPrice(symbol, price) {
-    document.getElementById(`price-${symbol}`).textContent = fmtMoney(price);
-    document.getElementById(`last-${symbol}`).textContent = new Date().toLocaleTimeString();
-  }
-
-  async function fetchSnapshot(symbol) {
-    try {
-      const res = await fetch(`${API_BASE}${encodeURIComponent(symbol)}/`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      // Try common fields; adjust if your API returns different keys
-      const price = data.price ?? data.c ?? data.current ?? data.last ?? data.data?.price;
-      setPrice(symbol, price);
-    } catch (e) {
-      setStatus(symbol, false, `http error`);
-      console.warn("snapshot error", symbol, e);
-    }
-  }
-
-  function connectWS(symbol) {
-    const url = `${WS_BASE}${encodeURIComponent(symbol)}/`;
-    const ws = new WebSocket(url);
-
-    setStatus(symbol, true, "connecting…");
-
-    ws.onopen = () => setStatus(symbol, true, "connected");
-    ws.onclose = () => setStatus(symbol, false, "disconnected");
-    ws.onerror = () => setStatus(symbol, false, "ws error");
-
-    ws.onmessage = (evt) => {
-      try {
-        const msg = JSON.parse(evt.data);
-
-        // Handle multiple possible message shapes:
-        // 1) { price: 123.45 }
-        // 2) { c: 123.45 }  (Finnhub 'c' current)
-        // 3) { data: { price: 123.45 } }
-        // 4) Finnhub WS style: { data: [{ p: 123.45, s: "AAPL" }, ...] }
-        let price = msg.price ?? msg.c ?? msg.current ?? msg.last ?? msg.data?.price;
-
-        if (price === undefined && Array.isArray(msg.data) && msg.data[0]?.p !== undefined) {
-          price = msg.data[0].p;
-        }
-
-        if (price !== undefined) setPrice(symbol, price);
-        setStatus(symbol, true, "connected");
-      } catch (e) {
-        console.warn("ws parse error", symbol, e, evt.data);
-      }
-    };
-
-    // reconnect loop
-    const retry = () => setTimeout(() => connectWS(symbol), 2000);
-    ws.addEventListener("close", retry, { once: true });
-  }
-
-  // Build UI
-  SYMBOLS.forEach(sym => grid.appendChild(makeCard(sym)));
-
-  // Kick off
-  SYMBOLS.forEach(sym => {
-    connectWS(sym);
-    fetchSnapshot(sym);
+    row.addEventListener("click", () => {
+      ytQueue = items;
+      ytIndex = idx;
+      ytPlayVideoId(items[ytIndex].videoId);
+      ytSetStatus(`Playing: ${items[ytIndex].title}`);
+    });
+    ytResults.appendChild(row);
   });
-</script>
+}
 
+async function doYouTubeSearch(){
+  const q = ytQuery.value.trim();
+  if (!q) return;
+
+  ytSetStatus("Searching…");
+  ytResults.innerHTML = "";
+
+  try{
+    const url = `/api/youtube/search/?q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const items = data.items || [];
+    ytQueue = items;
+    ytIndex = 0;
+    renderYTResults(items);
+    ytSetStatus(`Results: ${items.length}`);
+  }catch(err){
+    console.warn(err);
+    ytSetStatus("Search failed (check backend / API key).");
+    ytResults.innerHTML = `<div class="smallNote">Search failed. Verify YOUTUBE_API_KEY and backend endpoint.</div>`;
+  }
+}
+
+/* IMPORTANT:
+   The submit handler must prevent default.
+   Also make sure no other click handler redirects to Home.
+*/
+ytForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  doYouTubeSearch();
+});
+
+// Player controls (simple — embed doesn’t expose state without IFrame API, so we do basic next/prev)
+document.getElementById("ytNext").addEventListener("click", () => {
+  if (!ytQueue.length) return;
+  ytIndex = (ytIndex + 1) % ytQueue.length;
+  ytPlayVideoId(ytQueue[ytIndex].videoId);
+  ytSetStatus(`Playing: ${ytQueue[ytIndex].title}`);
+});
+document.getElementById("ytPrev").addEventListener("click", () => {
+  if (!ytQueue.length) return;
+  ytIndex = (ytIndex - 1 + ytQueue.length) % ytQueue.length;
+  ytPlayVideoId(ytQueue[ytIndex].videoId);
+  ytSetStatus(`Playing: ${ytQueue[ytIndex].title}`);
+});
+document.getElementById("ytPlayPause").addEventListener("click", () => {
+  // With a plain embed iframe, true play/pause requires the YouTube IFrame API.
+  // For now we keep it simple: reload current video to "play".
+  if (!ytQueue.length) {
+    ytSetStatus("Tip: search + tap a result first");
+    return;
+  }
+  ytPlayVideoId(ytQueue[ytIndex].videoId);
+  ytSetStatus(`Playing: ${ytQueue[ytIndex].title}`);
+});
+
+// Start at Home
+setMode("home");
+</script>
+</body>
+</html>
