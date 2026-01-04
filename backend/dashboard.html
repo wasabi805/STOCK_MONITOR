@@ -391,7 +391,7 @@
         <div class="ytIframe">
           <!-- Start with something valid so iframe exists and can keep playing even if view is hidden -->
           <iframe id="ytFrame"
-            src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=0&mute=0&playsinline=1"
+            src="https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&autoplay=0&mute=0&playsinline=1"
             allow="autoplay; encrypted-media; picture-in-picture"
             allowfullscreen>
           </iframe>
@@ -480,6 +480,7 @@
   </div>
 </section>
 
+<script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
 /* -----------------------------
@@ -667,14 +668,23 @@ const ytFrame = document.getElementById("ytFrame");
 
 let ytQueue = [];
 let ytIndex = 0;
+let ytPlayer = null;
+
+window.onYouTubeIframeAPIReady = function () {
+  ytPlayer = new YT.Player("ytFrame");
+};
 
 function ytSetStatus(msg){ ytStatus.textContent = msg; }
 
 function ytPlayVideoId(videoId){
-  // Keep embed alive; just swap src
-  const url = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&playsinline=1`;
+  const url = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&mute=0&playsinline=1`;
   ytFrame.src = url;
-}
+
+  // give the iframe a moment to load, then try play
+  setTimeout(() => {
+    try { ytPlayer?.playVideo?.(); } catch(_) {}
+  }, 700);
+};
 
 function renderYTResults(items){
   ytResults.innerHTML = "";
@@ -750,14 +760,14 @@ document.getElementById("ytPrev").addEventListener("click", () => {
   ytSetStatus(`Playing: ${ytQueue[ytIndex].title}`);
 });
 document.getElementById("ytPlayPause").addEventListener("click", () => {
-  // With a plain embed iframe, true play/pause requires the YouTube IFrame API.
-  // For now we keep it simple: reload current video to "play".
-  if (!ytQueue.length) {
-    ytSetStatus("Tip: search + tap a result first");
+  if (!ytPlayer) {
+    ytSetStatus("Player not ready yet…");
     return;
   }
-  ytPlayVideoId(ytQueue[ytIndex].videoId);
-  ytSetStatus(`Playing: ${ytQueue[ytIndex].title}`);
+  const state = ytPlayer.getPlayerState?.();
+  // 1 = playing, 2 = paused
+  if (state === 1) ytPlayer.pauseVideo();
+  else ytPlayer.playVideo();
 });
 
 // Start at Home
