@@ -8,7 +8,6 @@
     :root{
       --bg:#0b1020;
       --panel:#111a33;
-      --panel2:#0f1730;
       --border:rgba(255,255,255,.08);
       --text:#e8ecff;
       --muted:rgba(232,236,255,.7);
@@ -30,14 +29,9 @@
     }
     a{color:inherit}
 
-    /* App shell */
-    #app{
-      position:relative;
-      height:100%;
-      width:100%;
-    }
+    #app{position:relative;height:100%;width:100%}
 
-    /* Views are layered; inactive views are transparent but still "alive" (important for YouTube playback) */
+    /* Views are layered; inactive views are hidden but can remain mounted */
     .view{
       position:absolute;
       inset:0;
@@ -46,10 +40,7 @@
       pointer-events:none;
       transition:opacity .18s ease;
     }
-    .view.active{
-      opacity:1;
-      pointer-events:auto;
-    }
+    .view.active{opacity:1;pointer-events:auto}
 
     /* Header */
     .topbar{
@@ -117,21 +108,9 @@
       justify-content:space-between;
       min-height:160px;
     }
-    .homeCard h2{
-      margin:0 0 6px;
-      font-size:22px;
-      letter-spacing:.2px;
-    }
-    .homeCard p{
-      margin:0;
-      color:var(--muted);
-      line-height:1.3;
-    }
-    .homeCard .actions{
-      display:flex;
-      gap:10px;
-      margin-top:12px;
-    }
+    .homeCard h2{margin:0 0 6px;font-size:22px;letter-spacing:.2px}
+    .homeCard p{margin:0;color:var(--muted);line-height:1.3}
+    .homeCard .actions{display:flex;gap:10px;margin-top:12px}
 
     /* Stocks */
     .grid{
@@ -148,34 +127,19 @@
       display:flex;
       flex-direction:column;
       justify-content:space-between;
+      cursor:pointer;
     }
-    .symRow{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-    }
-    .sym{
-      font-weight:900;
-      letter-spacing:.6px;
-      font-size:18px;
-    }
-    .price{
-      font-size:36px;
-      font-weight:900;
-      letter-spacing:.2px;
-    }
-    .meta{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      color:var(--muted);
-      font-size:12px;
-    }
+    .symRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .sym{font-weight:900;letter-spacing:.6px;font-size:18px}
+    .price{font-size:36px;font-weight:900;letter-spacing:.2px}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px}
     .chip{
       border:1px solid var(--border);
       background:rgba(0,0,0,.15);
       padding:6px 10px;
       border-radius:999px;
     }
+    .smallNote{font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.25}
 
     /* YouTube */
     .ytLayout{
@@ -229,17 +193,7 @@
       overflow:hidden;
       background:#000;
     }
-    .ytIframe iframe{
-      width:100%;
-      height:100%;
-      border:0;
-    }
-
-    .ytResults{
-      height:100%;
-      overflow:auto;
-      padding-right:6px;
-    }
+    .ytResults{height:100%;overflow:auto;padding-right:6px}
     .ytItem{
       display:flex;
       gap:10px;
@@ -252,63 +206,20 @@
     }
     .ytItem:active{transform:translateY(1px)}
     .ytThumb{
-      width:110px;
-      height:62px;
-      border-radius:10px;
-      background:#111;
-      object-fit:cover;
-      flex:0 0 auto;
-      border:1px solid rgba(255,255,255,.08);
+      width:110px;height:62px;border-radius:10px;background:#111;
+      object-fit:cover;flex:0 0 auto;border:1px solid rgba(255,255,255,.08);
     }
-    .ytText{
-      min-width:0;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
+    .ytText{min-width:0;display:flex;flex-direction:column;gap:6px}
     .ytTitle{
-      font-weight:800;
-      font-size:13px;
-      line-height:1.25;
-      overflow:hidden;
-      display:-webkit-box;
-      -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
+      font-weight:800;font-size:13px;line-height:1.25;overflow:hidden;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
     }
-    .ytChan{
-      font-size:12px;
-      color:var(--muted);
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      max-width:100%;
-    }
-    .smallNote{
-      font-size:12px;
-      color:var(--muted2);
-      margin-top:10px;
-      line-height:1.25;
-    }
+    .ytChan{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-    /* Fit small screens */
     @media (max-width: 900px){
       .grid{grid-template-columns: 1fr 1fr;}
       .ytLayout{grid-template-columns: 1fr;}
     }
-
-    /*YOUTUBE RESULTS*/
-    .resultRow{
-      display:flex; gap:10px; align-items:flex-start;
-      padding:10px; border-radius:14px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.07);
-      cursor:pointer;
-    }
-    .resultRow:active{ transform: translateY(1px); }
-    .resultThumb{ width:120px; aspect-ratio:16/9; border-radius:10px; object-fit:cover; flex:0 0 auto; }
-    .resultTitle{ font-weight:900; font-size:13px; line-height:1.25; }
-    .resultChan{ font-size:11px; opacity:.8; margin-top:4px; }
-
   </style>
 </head>
 
@@ -336,7 +247,7 @@
       <div class="homeCard">
         <div>
           <h2>YouTube</h2>
-          <p>Search + play videos. Stays playing while you peek at Stocks.</p>
+          <p>Search + play videos. Keep it playing while you peek at Stocks.</p>
         </div>
         <div class="actions">
           <button class="btn primary" id="goYouTube" type="button">Open YouTube</button>
@@ -379,7 +290,6 @@
         <div class="ytControls">
           <form id="ytForm" autocomplete="off">
             <input id="ytQuery" type="text" placeholder="Search YouTube (e.g., lofi hip hop, NFL highlights, React tutorial)" />
-            <!-- IMPORTANT: this must be type=button or a submit with preventDefault -->
             <button class="btn primary" id="ytSearchBtn" type="submit">Search</button>
           </form>
 
@@ -389,17 +299,14 @@
         </div>
 
         <div class="ytIframe">
-          <!-- Start with something valid so iframe exists and can keep playing even if view is hidden -->
-          <iframe id="ytFrame"
-            src="https://www.youtube.com/embed/jfKfPfyJRdk?enablejsapi=1&autoplay=0&mute=0&playsinline=1"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowfullscreen>
-          </iframe>
+          <!-- YouTube IFrame API will inject the iframe into this div -->
+          <div id="ytPlayer" style="width:100%;height:100%"></div>
         </div>
 
         <div class="smallNote">
-          Note: This uses your Django endpoint <code>/api/youtube/search/?q=...</code>. If the API key is missing/invalid,
-          search will fail but playback of already-loaded videos still works.
+          Note: Search calls your Django endpoint <code>:8000/api/youtube/search/?q=...</code>.
+          If the API key is missing/invalid, search will fail but already playing videos still work.
+          Also: due to autoplay policy, the first play may require a tap.
         </div>
       </div>
 
@@ -412,77 +319,18 @@
 
 </div>
 
-  <!-- HOME VIEW -->
-  <section class="view active" id="view-home">
-    <div class="homeGrid">
-      <div class="tile" id="tile-stocks">
-        <div>
-          <div class="tileTitle">📈 Stocks</div>
-          <div class="tileDesc">Live tiles via WebSockets + HTTP snapshot refresh. Tap a tile to refresh.</div>
-        </div>
-        <div class="tileHint">Tap to open</div>
-      </div>
-
-      <div class="tile" id="tile-music">
-        <div>
-          <div class="tileTitle">🎵 Music</div>
-          <div class="tileDesc">Placeholder screen for your Suno player. We’ll add playlists + streaming next.</div>
-        </div>
-        <div class="tileHint">Tap to open</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- STOCKS VIEW -->
-  <section class="view" id="view-stocks">
-    <div class="wrap">
-      <div class="meta" id="stocksMeta">--</div>
-      <div class="grid" id="grid"></div>
-      <div class="hint">
-        Tip: Tap a tile to refresh the snapshot via HTTP (handy when markets are closed).<br/>
-        WebSockets connect to <code>/ws/quotes/&lt;SYMBOL&gt;/</code> and update when data is pushed.
-      </div>
-    </div>
-  </section>
-
-  <!-- MUSIC VIEW (stub) -->
-  <section class="view" id="view-music">
-  <div style="max-width:1000px;margin:0 auto;">
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <h2 style="margin:6px 0 10px;font-size:22px;">▶️ YouTube</h2>
-      <form id="ytForm" style="display:flex;gap:10px;align-items:center;flex:1;min-width:260px;">
-        <input id="ytQuery" type="text" placeholder="Search YouTube (music, sports, code…)" autocomplete="off"
-          style="flex:1;min-width:220px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#e8eef6;">
-        <button id="ytSearchBtn" class="btn primary" type="submit">Search</button>
-      </form>
-      <button class="btn" id="ytPrev">Prev</button>
-      <button class="btn" id="ytPlayPause">Play/Pause</button>
-      <button class="btn" id="ytNext">Next</button>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1.3fr .7fr;gap:12px;">
-      <div style="background:#111826;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:10px;">
-        <div id="ytPlayer" style="width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;"></div>
-        <div style="margin-top:8px;font-size:12px;opacity:.85;">
-          Now Playing: <span id="ytNow">—</span>
-        </div>
-        <div style="margin-top:6px;font-size:11px;opacity:.7;line-height:1.35;">
-          Tip: first play may require a tap due to browser autoplay policy.
-        </div>
-      </div>
-
-      <div style="background:#111826;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:10px;max-height:520px;overflow:auto;">
-        <div style="font-weight:900;margin:4px 0 8px;">Results</div>
-        <div id="ytStatus" style="font-size:12px;opacity:.8;margin-bottom:8px;">Search for something to begin.</div>
-        <div id="ytResults" style="display:flex;flex-direction:column;gap:10px;"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <script src="https://www.youtube.com/iframe_api"></script>
-
 <script>
+/* =============================
+   IMPORTANT: ports / base URLs
+   - dashboard runs on :8080
+   - Django/Daphne runs on :8000
+============================= */
+const API_PORT = 8000;
+const API_BASE = `${location.protocol}//${location.hostname}:${API_PORT}`;
+const WS_PROTO = (location.protocol === "https:") ? "wss" : "ws";
+const WS_BASE  = `${WS_PROTO}://${location.hostname}:${API_PORT}`;
+
 /* -----------------------------
    Mode switching
 --------------------------------*/
@@ -494,18 +342,12 @@ let currentMode = "home"; // home | stocks | youtube
 
 function setMode(mode){
   currentMode = mode;
-
   viewHome.classList.toggle("active",   mode === "home");
   viewStocks.classList.toggle("active", mode === "stocks");
   viewYT.classList.toggle("active",     mode === "youtube");
 
-  // Lazy-init Stocks the first time you open it
   if (mode === "stocks") initStocksOnce();
-
-  // Optional: focus search box when entering YouTube
-  if (mode === "youtube") {
-    setTimeout(() => document.getElementById("ytQuery")?.focus(), 50);
-  }
+  if (mode === "youtube") setTimeout(() => document.getElementById("ytQuery")?.focus(), 50);
 }
 
 document.getElementById("goStocks").addEventListener("click", () => setMode("stocks"));
@@ -514,7 +356,7 @@ document.getElementById("stocksHome").addEventListener("click", () => setMode("h
 document.getElementById("ytHome").addEventListener("click", () => setMode("home"));
 
 /* -----------------------------
-   STOCKS (keep behavior as-is, but init when entering Stocks)
+   STOCKS
 --------------------------------*/
 const tickers = ["AAPL","NVDA","MSFT","TSLA","AMZN","GOOGL"];
 const cardsEl = document.getElementById("cards");
@@ -527,12 +369,12 @@ let stocksInitialized = false;
 let stockSockets = {}; // symbol -> WebSocket
 
 function setStocksStatus(state){
-  // state: good | warn | bad
   stocksDot.classList.remove("good","warn","bad");
   stocksDot.classList.add(state);
-  if (state === "good") stocksConnText.textContent = "connected";
-  if (state === "warn") stocksConnText.textContent = "connecting…";
-  if (state === "bad")  stocksConnText.textContent = "disconnected";
+  stocksConnText.textContent =
+    state === "good" ? "connected" :
+    state === "warn" ? "connecting…" :
+    "disconnected";
 }
 
 function renderStockCard(symbol){
@@ -551,24 +393,21 @@ function renderStockCard(symbol){
     </div>
   `;
 
-  // Tap to refresh via HTTP
   card.addEventListener("click", () => refreshSnapshot(symbol));
   return card;
 }
 
 function updateClock(){
-  const d = new Date();
-  clockEl.textContent = d.toLocaleString();
+  clockEl.textContent = new Date().toLocaleString();
 }
 setInterval(updateClock, 1000);
 updateClock();
 
 async function refreshSnapshot(symbol){
   try{
-    const res = await fetch(`/api/stock/${symbol}/`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/api/stock/${symbol}/`, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    // Expecting something like: { symbol, price, timestamp } or similar
     const price = data.price ?? data.last ?? data.current ?? "--";
     setStockUI(symbol, price, "http refresh");
   }catch(e){
@@ -588,11 +427,7 @@ function setStockUI(symbol, price, status){
 }
 
 function connectWS(symbol){
-  // If already connected, skip
-  if (stockSockets[symbol] && stockSockets[symbol].readyState === WebSocket.OPEN) return;
-
-  const wsProto = (location.protocol === "https:") ? "wss" : "ws";
-  const wsUrl = `${wsProto}://${location.host}/ws/quotes/${symbol}/`;
+  const wsUrl = `${WS_BASE}/ws/quotes/${symbol}/`;
 
   const card = document.getElementById(`card-${symbol}`);
   const wsStateEl = card?.querySelector(".wsState");
@@ -615,7 +450,6 @@ function connectWS(symbol){
   ws.onmessage = (evt) => {
     try{
       const msg = JSON.parse(evt.data);
-      // Expecting msg like {symbol:"AAPL", price: 123.45} or {price:...}
       const price = msg.price ?? msg.last ?? msg.current ?? "--";
       setStockUI(symbol, price, "connected");
     }catch(e){
@@ -626,7 +460,6 @@ function connectWS(symbol){
   ws.onerror = () => {
     if (wsStateEl) wsStateEl.textContent = "error";
     if (dotEl){ dotEl.classList.remove("good","warn"); dotEl.classList.add("bad"); }
-    setStockUI(symbol, document.getElementById(`price-${symbol}`)?.textContent ?? "--", "error");
     setStocksStatus("bad");
   };
 
@@ -636,7 +469,6 @@ function connectWS(symbol){
     setStockUI(symbol, document.getElementById(`price-${symbol}`)?.textContent ?? "--", "disconnected");
     setStocksStatus("bad");
 
-    // Auto-reconnect after a moment (but only if you’re still in stocks mode)
     setTimeout(() => {
       if (currentMode === "stocks") connectWS(symbol);
     }, 2000);
@@ -649,42 +481,44 @@ function initStocksOnce(){
 
   cardsEl.innerHTML = "";
   tickers.forEach(sym => cardsEl.appendChild(renderStockCard(sym)));
-
-  // connect sockets
   tickers.forEach(sym => connectWS(sym));
-
-  // initial HTTP snapshot (optional)
   tickers.forEach(sym => refreshSnapshot(sym));
 }
 
 /* -----------------------------
-   YOUTUBE
+   YOUTUBE (proper IFrame API usage)
 --------------------------------*/
 const ytForm = document.getElementById("ytForm");
 const ytQuery = document.getElementById("ytQuery");
 const ytResults = document.getElementById("ytResults");
 const ytStatus = document.getElementById("ytStatus");
-const ytFrame = document.getElementById("ytFrame");
 
 let ytQueue = [];
 let ytIndex = 0;
 let ytPlayer = null;
-
-window.onYouTubeIframeAPIReady = function () {
-  ytPlayer = new YT.Player("ytFrame");
-};
+let ytReady = false;
 
 function ytSetStatus(msg){ ytStatus.textContent = msg; }
 
-function ytPlayVideoId(videoId){
-  const url = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&mute=0&playsinline=1`;
-  ytFrame.src = url;
-
-  // give the iframe a moment to load, then try play
-  setTimeout(() => {
-    try { ytPlayer?.playVideo?.(); } catch(_) {}
-  }, 700);
+window.onYouTubeIframeAPIReady = function () {
+  ytPlayer = new YT.Player("ytPlayer", {
+    videoId: "jfKfPfyJRdk",
+    playerVars: {
+      autoplay: 0,
+      playsinline: 1,
+      rel: 0
+    },
+    events: {
+      onReady: () => { ytReady = true; ytSetStatus("Ready"); }
+    }
+  });
 };
+
+function ytLoad(videoId, title){
+  if (!ytReady) { ytSetStatus("Player not ready yet…"); return; }
+  ytPlayer.loadVideoById(videoId);
+  ytSetStatus(title ? `Playing: ${title}` : "Playing");
+}
 
 function renderYTResults(items){
   ytResults.innerHTML = "";
@@ -706,8 +540,7 @@ function renderYTResults(items){
     row.addEventListener("click", () => {
       ytQueue = items;
       ytIndex = idx;
-      ytPlayVideoId(items[ytIndex].videoId);
-      ytSetStatus(`Playing: ${items[ytIndex].title}`);
+      ytLoad(items[ytIndex].videoId, items[ytIndex].title);
     });
     ytResults.appendChild(row);
   });
@@ -721,7 +554,7 @@ async function doYouTubeSearch(){
   ytResults.innerHTML = "";
 
   try{
-    const url = `http://${location.hostname}:8000/api/youtube/search/?q=${encodeURIComponent(q)}`;
+    const url = `${API_BASE}/api/youtube/search/?q=${encodeURIComponent(q)}`;
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -733,44 +566,33 @@ async function doYouTubeSearch(){
   }catch(err){
     console.warn(err);
     ytSetStatus("Search failed (check backend / API key).");
-    ytResults.innerHTML = `<div class="smallNote">Search failed. Verify YOUTUBE_API_KEY and backend endpoint.</div>`;
+    ytResults.innerHTML = `<div class="smallNote">Search failed. Verify YOUTUBE_API_KEY and backend endpoint on :8000.</div>`;
   }
 }
 
-/* IMPORTANT:
-   The submit handler must prevent default.
-   Also make sure no other click handler redirects to Home.
-*/
 ytForm.addEventListener("submit", (e) => {
   e.preventDefault();
   doYouTubeSearch();
 });
 
-// Player controls (simple — embed doesn’t expose state without IFrame API, so we do basic next/prev)
 document.getElementById("ytNext").addEventListener("click", () => {
   if (!ytQueue.length) return;
   ytIndex = (ytIndex + 1) % ytQueue.length;
-  ytPlayVideoId(ytQueue[ytIndex].videoId);
-  ytSetStatus(`Playing: ${ytQueue[ytIndex].title}`);
+  ytLoad(ytQueue[ytIndex].videoId, ytQueue[ytIndex].title);
 });
 document.getElementById("ytPrev").addEventListener("click", () => {
   if (!ytQueue.length) return;
   ytIndex = (ytIndex - 1 + ytQueue.length) % ytQueue.length;
-  ytPlayVideoId(ytQueue[ytIndex].videoId);
-  ytSetStatus(`Playing: ${ytQueue[ytIndex].title}`);
+  ytLoad(ytQueue[ytIndex].videoId, ytQueue[ytIndex].title);
 });
 document.getElementById("ytPlayPause").addEventListener("click", () => {
-  if (!ytPlayer) {
-    ytSetStatus("Player not ready yet…");
-    return;
-  }
-  const state = ytPlayer.getPlayerState?.();
-  // 1 = playing, 2 = paused
-  if (state === 1) ytPlayer.pauseVideo();
+  if (!ytReady) { ytSetStatus("Tap video once if needed (autoplay policy)."); return; }
+  const state = ytPlayer.getPlayerState();
+  if (state === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
   else ytPlayer.playVideo();
 });
 
-// Start at Home
+/* Start at Home */
 setMode("home");
 </script>
 </body>
