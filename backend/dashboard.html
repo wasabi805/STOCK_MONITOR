@@ -91,6 +91,74 @@
       background:rgba(76,201,240,.12);
     }
 
+    /* --- Settings overlay --- */
+    .settings-btn{
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 9999;
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .settings{
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      background: rgba(0,0,0,.55);
+      display: flex;
+      align-items: stretch;
+      justify-content: flex-end;
+    }
+
+    .settings.hidden{
+      display: none;
+    }
+
+    .settingsPanel{
+      width: min(520px, 92vw);
+      height: 100%;
+      background: rgba(17,26,51,.98);
+      border-left: 1px solid var(--border);
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .settingsPanel h2{
+      margin: 0 0 12px;
+    }
+
+    .settingsPanel section{
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .settingsRow{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .settingsPanel select,
+    .settingsPanel input[type="range"]{
+      width: 100%;
+    }
+
+    .settingsPanel .muted{
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     /* Home */
     .homeGrid{
       display:grid;
@@ -319,6 +387,48 @@
 
 </div>
 
+<!-- Settings Button (always visible) -->
+<button id="settingsBtn" class="settings-btn" type="button">⚙️</button>
+
+<!-- Settings Overlay -->
+<div id="settingsOverlay" class="settings hidden">
+  <div class="settingsPanel">
+    <div class="settingsRow" style="justify-content:space-between;">
+      <h2>Settings</h2>
+      <button id="closeSettings" class="btn" type="button">Close</button>
+    </div>
+
+    <section>
+      <h3 style="margin:0 0 10px;">Audio Output (Bluetooth)</h3>
+      <div class="settingsRow">
+        <select id="btDeviceSelect">
+          <option value="">(Not wired yet)</option>
+        </select>
+        <button id="btRescan" class="btn" type="button">Rescan</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">
+        Next step: we’ll wire this to the Pi backend so it can list and select devices.
+      </div>
+    </section>
+
+    <section>
+      <h3 style="margin:0 0 10px;">Volume</h3>
+      <input type="range" id="volumeSlider" min="0" max="100" value="70" />
+      <div class="muted" style="margin-top:8px;">
+        Next step: we’ll wire this to PipeWire so it changes system volume.
+      </div>
+    </section>
+
+    <section>
+      <h3 style="margin:0 0 10px;">Future Settings</h3>
+      <div class="muted">
+        Display rotation · Editable tickers · Snapshot interval · Network status · etc.
+      </div>
+    </section>
+  </div>
+</div>
+
+
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 /* =============================
@@ -349,6 +459,33 @@ function setMode(mode){
   if (mode === "stocks") initStocksOnce();
   if (mode === "youtube") setTimeout(() => document.getElementById("ytQuery")?.focus(), 50);
 }
+
+/* -----------------------------
+   SETTINGS overlay (UI only for now)
+--------------------------------*/
+const settingsOverlay = document.getElementById("settingsOverlay");
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  settingsOverlay.classList.remove("hidden");
+});
+document.getElementById("closeSettings").addEventListener("click", () => {
+  settingsOverlay.classList.add("hidden");
+});
+
+// Close settings if you tap the dark background
+settingsOverlay.addEventListener("click", (e) => {
+  if (e.target === settingsOverlay) settingsOverlay.classList.add("hidden");
+});
+
+// Placeholder actions (we’ll wire to backend next)
+document.getElementById("btRescan").addEventListener("click", () => {
+  alert("Next step: wire /api/audio/devices to populate this list.");
+});
+
+document.getElementById("volumeSlider").addEventListener("input", (e) => {
+  // For now: just show the value in console.
+  console.log("Volume (placeholder):", e.target.value);
+});
+
 
 document.getElementById("goStocks").addEventListener("click", () => setMode("stocks"));
 document.getElementById("goYouTube").addEventListener("click", () => setMode("youtube"));
